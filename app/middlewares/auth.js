@@ -4,6 +4,35 @@ const { isTokenValid } = require("../utils/jwt");
 const authenticateUser = async (req, res, next) => {
   try {
     let token;
+    const authHeader = req.headers.authorization;
+
+    if (authHeader && authHeader.startsWith("Bearer")) {
+      token = authHeader.split(" ")[1];
+    }
+
+    if (!token) {
+      throw new UnauthenticatedError("Authentication invalid");
+    }
+
+    const payload = isTokenValid({ token });
+
+    req.user = {
+      email: payload.email,
+      role: payload.role,
+      name: payload.name,
+      organizer: payload.organizer,
+      id: payload.userId,
+    };
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+const authenticateParticipant = async (req, res, next) => {
+  try {
+    let token;
     // check header
     const authHeader = req.headers.authorization;
 
@@ -18,12 +47,11 @@ const authenticateUser = async (req, res, next) => {
     const payload = isTokenValid({ token });
 
     // Attach the user and his permissions to the req object
-    req.user = {
+    req.participant = {
       email: payload.email,
-      role: payload.role,
-      name: payload.name,
-      organizer: payload.organizer,
-      id: payload.userId,
+      lastName: payload.lastName,
+      firstName: payload.firstName,
+      id: payload.participantId,
     };
 
     next();
@@ -41,5 +69,4 @@ const authorizeRoles = (...roles) => {
   };
 };
 
-module.exports = { authenticateUser, authorizeRoles };
-Footer;
+module.exports = { authenticateUser, authorizeRoles, authenticateParticipant };

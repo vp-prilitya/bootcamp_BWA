@@ -7,7 +7,7 @@ const { NotFoundError, BadRequestError } = require("../../errors");
 
 const getAllEvents = async (req) => {
   const { keyword, category, talent, status } = req.query;
-  let condition = {};
+  let condition = { organizer: req.user.organizer };
   const statusData = ["Published", "Draft"];
 
   if (keyword) {
@@ -67,7 +67,7 @@ const createEvents = async (req) => {
   await checkingCategories(category);
   await checkingTalents(talent);
 
-  const check = await Events.findOne({ title });
+  const check = await Events.findOne({ title, organizer: req.user.organizer });
 
   if (check) throw new BadRequestError("judul event duplikat");
 
@@ -83,6 +83,7 @@ const createEvents = async (req) => {
     image,
     category,
     talent,
+    organizer: req.user.organizer,
   });
 
   return result;
@@ -91,7 +92,10 @@ const createEvents = async (req) => {
 const getOneEvents = async (req) => {
   const { id } = req.params;
 
-  const result = await Events.findOne({ _id: id })
+  const result = await Events.findOne({
+    _id: id,
+    organizer: req.user.organizer,
+  })
     .populate({ path: "image", select: "_id name" })
     .populate({
       path: "category",
@@ -132,6 +136,7 @@ const updateEvents = async (req) => {
   const check = await Events.findOne({
     title,
     _id: { $ne: id },
+    organizer: req.user.organizer,
   });
 
   if (check) throw new BadRequestError("judul event duplikat");
@@ -164,6 +169,7 @@ const deleteEvents = async (req) => {
 
   const result = await Events.findOne({
     _id: id,
+    organizer: req.user.organizer,
   });
 
   if (!result) throw new NotFoundError(`Tidak ada event dengan id :  ${id}`);
@@ -178,7 +184,7 @@ const updateStatusEvents = async (req) => {
   const { status } = req.body;
 
   const result = await Events.findOneAndUpdate(
-    { _id: id },
+    { _id: id, organizer: req.user.organizer },
     {
       statusEvent: status,
     },
